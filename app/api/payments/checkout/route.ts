@@ -68,8 +68,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       pagamento,
-      qrCode: resultado.point_of_interaction?.transaction_data?.qr_code,
-      copiaECola: resultado.point_of_interaction?.transaction_data?.qr_code_base64,
+      copiaECola: resultado.point_of_interaction?.transaction_data?.qr_code,
+      qrCodeBase64: resultado.point_of_interaction?.transaction_data?.qr_code_base64,
       checkoutUrl: (resultado as unknown as { init_point?: string }).init_point,
     });
   } catch (error) {

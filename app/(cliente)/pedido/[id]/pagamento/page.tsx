@@ -12,7 +12,9 @@ export default function PaginaPagamento({ params }: { params: Promise<{ id: stri
   const router = useRouter();
   const [processando, setProcessando] = useState<FormaPagamento | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [dadosPix, setDadosPix] = useState<{ qrCode?: string } | null>(null);
+  const [dadosPix, setDadosPix] = useState<{ qrCodeBase64?: string; copiaECola?: string } | null>(
+    null,
+  );
 
   async function pagar(formaPagamento: FormaPagamento) {
     setErro(null);
@@ -26,8 +28,8 @@ export default function PaginaPagamento({ params }: { params: Promise<{ id: stri
       const dados = await resposta.json();
       if (!resposta.ok) throw new Error(dados.erro);
 
-      if (formaPagamento === "pix" && dados.qrCode) {
-        setDadosPix({ qrCode: dados.qrCode });
+      if (formaPagamento === "pix" && dados.copiaECola) {
+        setDadosPix({ qrCodeBase64: dados.qrCodeBase64, copiaECola: dados.copiaECola });
         return;
       }
       if (formaPagamento === "cartao" && dados.checkoutUrl) {
@@ -47,16 +49,30 @@ export default function PaginaPagamento({ params }: { params: Promise<{ id: stri
     }
   }
 
-  if (dadosPix?.qrCode) {
+  if (dadosPix?.copiaECola) {
     return (
       <div className="space-y-4 text-center">
         <h1 className="text-2xl font-bold text-secondary">Pague com Pix</h1>
         <p className="text-sm text-muted-foreground">
           Abra o app do seu banco, escaneie o QR code ou use o código copia-e-cola abaixo.
         </p>
+        {dadosPix.qrCodeBase64 && (
+          <img
+            src={`data:image/png;base64,${dadosPix.qrCodeBase64}`}
+            alt="QR code Pix"
+            className="mx-auto h-56 w-56"
+          />
+        )}
         <Card>
-          <CardContent className="break-all pt-6 text-xs">{dadosPix.qrCode}</CardContent>
+          <CardContent className="break-all pt-6 text-xs">{dadosPix.copiaECola}</CardContent>
         </Card>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => navigator.clipboard.writeText(dadosPix.copiaECola ?? "")}
+        >
+          Copiar código
+        </Button>
         <Button className="w-full" onClick={() => router.push(`/pedido/${id}`)}>
           Já paguei
         </Button>
