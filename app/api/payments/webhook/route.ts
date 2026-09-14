@@ -61,6 +61,12 @@ export async function POST(request: Request) {
     const pedidoMp = await merchantOrderClient.get({ merchantOrderId: notificacaoId });
 
     const pagamentoMaisRecente = pedidoMp.payments?.at(-1);
+    console.log("[webhook] merchant_order", {
+      id: pedidoMp.id,
+      external_reference: pedidoMp.external_reference,
+      order_status: pedidoMp.order_status,
+      payments: pedidoMp.payments,
+    });
     await aplicarStatus(pedidoMp.external_reference, pagamentoMaisRecente?.id, pagamentoMaisRecente?.status);
     return NextResponse.json({ ok: true });
   }
