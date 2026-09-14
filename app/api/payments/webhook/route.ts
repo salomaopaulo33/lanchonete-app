@@ -14,9 +14,25 @@ const MAPA_STATUS_MERCADOPAGO = {
  * pagamento (FR-006). Não é chamado pelo frontend.
  */
 export async function POST(request: Request) {
-  const notificacao = await request.json();
-  const paymentId = notificacao.data?.id;
-  if (!paymentId) {
+  const url = new URL(request.url);
+  let corpo: { data?: { id?: string }; type?: string; topic?: string } | null = null;
+  try {
+    corpo = await request.json();
+  } catch {
+    corpo = null;
+  }
+
+  const topico = url.searchParams.get("topic") ?? url.searchParams.get("type") ?? corpo?.type ?? corpo?.topic;
+  const paymentId = url.searchParams.get("data.id") ?? url.searchParams.get("id") ?? corpo?.data?.id;
+
+  console.log("[webhook] notificação recebida", {
+    query: Object.fromEntries(url.searchParams),
+    corpo,
+    topico,
+    paymentId,
+  });
+
+  if (topico !== "payment" || !paymentId) {
     return NextResponse.json({ ok: true });
   }
 
