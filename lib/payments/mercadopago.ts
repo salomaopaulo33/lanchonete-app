@@ -1,4 +1,4 @@
-import { MercadoPagoConfig, Payment, Preference } from "mercadopago";
+import { MercadoPagoConfig, MerchantOrder, Payment, Preference } from "mercadopago";
 
 /**
  * Cliente do Mercado Pago (decisão registrada em research.md — gateway
@@ -18,4 +18,8 @@ export function getPaymentClient() {
 
 export function getPreferenceClient() {
   return new Preference(getMercadoPagoClient());
+}
+
+export function getMerchantOrderClient() {
+  return new MerchantOrder(getMercadoPagoClient());
 }

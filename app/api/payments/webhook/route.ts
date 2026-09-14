@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { getPaymentClient } from "@/lib/payments/mercadopago";
+import { getMerchantOrderClient, getPaymentClient } from "@/lib/payments/mercadopago";
 
 const MAPA_STATUS_MERCADOPAGO = {
   approved: "pago",
@@ -9,52 +9,14 @@ const MAPA_STATUS_MERCADOPAGO = {
   cancelled: "recusado",
 } as const;
 
-/**
- * POST /api/payments/webhook — recebido do Mercado Pago para confirmar
- * pagamento (FR-006). Não é chamado pelo frontend.
- */
-export async function POST(request: Request) {
-  const url = new URL(request.url);
-  let corpo: { data?: { id?: string }; type?: string; topic?: string } | null = null;
-  try {
-    corpo = await request.json();
-  } catch {
-    corpo = null;
-  }
-
-  const topico = url.searchParams.get("topic") ?? url.searchParams.get("type") ?? corpo?.type ?? corpo?.topic;
-  const paymentId = url.searchParams.get("data.id") ?? url.searchParams.get("id") ?? corpo?.data?.id;
-
-  console.log("[webhook] notificação recebida", {
-    query: Object.fromEntries(url.searchParams),
-    corpo,
-    topico,
-    paymentId,
-  });
-
-  if (topico !== "payment" || !paymentId) {
-    return NextResponse.json({ ok: true });
-  }
-
-  const paymentClient = getPaymentClient();
-  const pagamentoMp = await paymentClient.get({ id: paymentId });
-
-  console.log("[webhook] payment", {
-    id: pagamentoMp.id,
-    status: pagamentoMp.status,
-    status_detail: pagamentoMp.status_detail,
-    external_reference: pagamentoMp.external_reference,
-  });
-
-  const novoStatus =
-    MAPA_STATUS_MERCADOPAGO[pagamentoMp.status as keyof typeof MAPA_STATUS_MERCADOPAGO];
-  if (!novoStatus) {
-    return NextResponse.json({ ok: true });
-  }
-
-  const pedidoId = pagamentoMp.external_reference;
-  if (!pedidoId) {
-    return NextResponse.json({ ok: true });
+async function aplicarStatus(
+  pedidoId: string | undefined,
+  paymentId: number | string | undefined,
+  statusMp: string | undefined,
+) {
+  const novoStatus = MAPA_STATUS_MERCADOPAGO[statusMp as keyof typeof MAPA_STATUS_MERCADOPAGO];
+  if (!novoStatus || !pedidoId || !paymentId) {
+    return;
   }
 
   const supabase = createServiceRoleClient();
@@ -66,6 +28,50 @@ export async function POST(request: Request) {
       pago_em: novoStatus === "pago" ? new Date().toISOString() : null,
     })
     .eq("pedido_id", pedidoId);
+}
+
+/**
+ * POST /api/payments/webhook — recebido do Mercado Pago para confirmar
+ * pagamento (FR-006). Não é chamado pelo frontend.
+ *
+ * O Mercado Pago notifica tanto no formato IPN legado (query string
+ * ?topic=...&id=...) quanto no formato novo (corpo JSON {type, data.id}),
+ * e manda o topic "merchant_order" (usado pelo Checkout Pro) além de
+ * "payment" — cada um com um corpo diferente.
+ */
+export async function POST(request: Request) {
+  const url = new URL(request.url);
+  let corpo: { data?: { id?: string }; type?: string; topic?: string } | null = null;
+  try {
+    corpo = await request.json();
+  } catch {
+    corpo = null;
+  }
+
+  const topico =
+    url.searchParams.get("topic") ?? url.searchParams.get("type") ?? corpo?.type ?? corpo?.topic;
+  const notificacaoId = url.searchParams.get("data.id") ?? url.searchParams.get("id") ?? corpo?.data?.id;
+
+  if (!notificacaoId) {
+    return NextResponse.json({ ok: true });
+  }
+
+  if (topico === "merchant_order") {
+    const merchantOrderClient = getMerchantOrderClient();
+    const pedidoMp = await merchantOrderClient.get({ merchantOrderId: notificacaoId });
+
+    const pagamentoMaisRecente = pedidoMp.payments?.at(-1);
+    await aplicarStatus(pedidoMp.external_reference, pagamentoMaisRecente?.id, pagamentoMaisRecente?.status);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (topico === "payment") {
+    const paymentClient = getPaymentClient();
+    const pagamentoMp = await paymentClient.get({ id: notificacaoId });
+
+    await aplicarStatus(pagamentoMp.external_reference, pagamentoMp.id, pagamentoMp.status);
+    return NextResponse.json({ ok: true });
+  }
 
   return NextResponse.json({ ok: true });
 }
