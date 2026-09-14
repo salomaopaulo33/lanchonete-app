@@ -23,6 +23,13 @@ export async function POST(request: Request) {
   const paymentClient = getPaymentClient();
   const pagamentoMp = await paymentClient.get({ id: paymentId });
 
+  console.log("[webhook] payment", {
+    id: pagamentoMp.id,
+    status: pagamentoMp.status,
+    status_detail: pagamentoMp.status_detail,
+    external_reference: pagamentoMp.external_reference,
+  });
+
   const novoStatus =
     MAPA_STATUS_MERCADOPAGO[pagamentoMp.status as keyof typeof MAPA_STATUS_MERCADOPAGO];
   if (!novoStatus) {
