@@ -62,6 +62,7 @@ export async function POST(request: Request) {
           },
           auto_return: "approved",
           notification_url: notificationUrl,
+          external_reference: pedido.id,
         },
       });
 
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
         payment_method_id: "pix",
         payer: { email: "cliente@example.com" },
         notification_url: notificationUrl,
+        external_reference: pedido.id,
       },
     });
 

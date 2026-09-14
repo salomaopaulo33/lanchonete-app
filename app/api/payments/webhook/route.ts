@@ -29,14 +29,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  const pedidoId = pagamentoMp.external_reference;
+  if (!pedidoId) {
+    return NextResponse.json({ ok: true });
+  }
+
   const supabase = createServiceRoleClient();
   await supabase
     .from("pagamento")
     .update({
       status: novoStatus,
+      id_transacao_gateway: String(paymentId),
       pago_em: novoStatus === "pago" ? new Date().toISOString() : null,
     })
-    .eq("id_transacao_gateway", String(paymentId));
+    .eq("pedido_id", pedidoId);
 
   return NextResponse.json({ ok: true });
 }
