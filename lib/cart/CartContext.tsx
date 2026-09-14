@@ -1,67 +1,75 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import type { ItemCardapio } from "@/lib/domain/pedido";
+import {
+  assinar,
+  atualizarItens,
+  obterItens,
+  obterItensNoServidor,
+  type ItemCarrinho,
+} from "@/lib/cart/carrinhoStore";
 
-export interface ItemCarrinho {
-  item: ItemCardapio;
-  quantidade: number;
-}
+export type { ItemCarrinho } from "@/lib/cart/carrinhoStore";
 
 interface CartContextValue {
   itens: ItemCarrinho[];
   adicionarItem: (item: ItemCardapio) => void;
   removerItem: (itemId: string) => void;
   alterarQuantidade: (itemId: string, quantidade: number) => void;
+  quantidadeDoItem: (itemId: string) => number;
   limparCarrinho: () => void;
   valorTotal: number;
+  quantidadeTotal: number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [itens, setItens] = useState<ItemCarrinho[]>([]);
-
-  function adicionarItem(item: ItemCardapio) {
-    setItens((atual) => {
-      const existente = atual.find((i) => i.item.id === item.id);
-      if (existente) {
-        return atual.map((i) =>
-          i.item.id === item.id ? { ...i, quantidade: i.quantidade + 1 } : i,
-        );
-      }
-      return [...atual, { item, quantidade: 1 }];
-    });
-  }
-
-  function removerItem(itemId: string) {
-    setItens((atual) => atual.filter((i) => i.item.id !== itemId));
-  }
-
-  function alterarQuantidade(itemId: string, quantidade: number) {
-    if (quantidade <= 0) {
-      removerItem(itemId);
-      return;
+function adicionarItem(item: ItemCardapio) {
+  atualizarItens((atual) => {
+    const existente = atual.find((i) => i.item.id === item.id);
+    if (existente) {
+      return atual.map((i) => (i.item.id === item.id ? { ...i, quantidade: i.quantidade + 1 } : i));
     }
-    setItens((atual) => atual.map((i) => (i.item.id === itemId ? { ...i, quantidade } : i)));
+    return [...atual, { item, quantidade: 1 }];
+  });
+}
+
+function removerItem(itemId: string) {
+  atualizarItens((atual) => atual.filter((i) => i.item.id !== itemId));
+}
+
+function alterarQuantidade(itemId: string, quantidade: number) {
+  if (quantidade <= 0) {
+    removerItem(itemId);
+    return;
   }
+  atualizarItens((atual) => atual.map((i) => (i.item.id === itemId ? { ...i, quantidade } : i)));
+}
 
-  function limparCarrinho() {
-    setItens([]);
-  }
+function limparCarrinho() {
+  atualizarItens(() => []);
+}
 
-  const valorTotal = useMemo(
-    () => itens.reduce((total, i) => total + i.item.preco * i.quantidade, 0),
-    [itens],
-  );
+export function CartProvider({ children }: { children: ReactNode }) {
+  const itens = useSyncExternalStore(assinar, obterItens, obterItensNoServidor);
 
-  return (
-    <CartContext.Provider
-      value={{ itens, adicionarItem, removerItem, alterarQuantidade, limparCarrinho, valorTotal }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  const valor = useMemo<CartContextValue>(() => {
+    const valorTotal = itens.reduce((total, i) => total + i.item.preco * i.quantidade, 0);
+    const quantidadeTotal = itens.reduce((total, i) => total + i.quantidade, 0);
+    return {
+      itens,
+      adicionarItem,
+      removerItem,
+      alterarQuantidade,
+      quantidadeDoItem: (itemId) => itens.find((i) => i.item.id === itemId)?.quantidade ?? 0,
+      limparCarrinho,
+      valorTotal,
+      quantidadeTotal,
+    };
+  }, [itens]);
+
+  return <CartContext.Provider value={valor}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

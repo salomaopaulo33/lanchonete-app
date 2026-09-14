@@ -57,3 +57,6 @@ export function calcularValorTotal(
   const subtotal = itens.reduce((total, item) => total + item.quantidade * item.precoUnitario, 0);
   return Math.round((subtotal + taxaEntrega) * 100) / 100;
 }
+
+/** Taxa de entrega padrão, em reais, aplicada a pedidos com entrega. */
+export const TAXA_ENTREGA_PADRAO = 6.0;

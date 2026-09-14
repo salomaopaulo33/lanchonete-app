@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), Impact, "Arial Narrow Bold", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -27,6 +28,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -46,6 +49,60 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* "backwards" (e não "both"): ao terminar, o transform some e não vira
+     bloco de contenção para elementos position: fixed dentro da animação. */
+  --animate-subir: subir 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  --animate-surgir: surgir 0.4s ease-out backwards;
+  --animate-pulsar-anel: pulsar-anel 1.8s ease-out infinite;
+  --animate-flutuar: flutuar 6s ease-in-out infinite;
+  --animate-brilho: brilho 2.4s linear infinite;
+
+  @keyframes subir {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes surgir {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes pulsar-anel {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary), transparent 30%);
+    }
+    100% {
+      box-shadow: 0 0 0 14px color-mix(in oklch, var(--primary), transparent 100%);
+    }
+  }
+  @keyframes flutuar {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes brilho {
+    from {
+      background-position: 200% center;
+    }
+    to {
+      background-position: -200% center;
+    }
+  }
 }
 
 /*
@@ -68,6 +125,8 @@
   --accent: #262626;
   --accent-foreground: #f5821f;
   --destructive: #e5484d;
+  --success: #3ba55d;
+  --warning: #d97706;
   --border: #2e2e2e;
   --input: #2e2e2e;
   --ring: #f5821f;
@@ -76,15 +135,21 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+  --sidebar: #141414;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #f5821f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #262626;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2e2e2e;
+  --sidebar-ring: #f5821f;
+
+  /* Tons derivados usados pelos utilitários de identidade visual. */
+  --dourado-claro: #f3d27a;
+  --dourado-escuro: #8a6318;
+
+  color-scheme: dark;
 }
 
 .dark {
@@ -125,10 +190,120 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--primary), transparent 60%);
+  }
+}
+
+/* ---------- Utilitários de identidade visual ---------- */
+
+/* Título em fonte display (condensada, caixa alta), como no logo. */
+@utility titulo-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+/* Texto com degradê dourado (o mesmo brilho metálico do anel do logo). */
+@utility texto-dourado {
+  background-image: linear-gradient(
+    120deg,
+    var(--dourado-claro) 0%,
+    var(--secondary) 45%,
+    var(--dourado-escuro) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Variante animada: o brilho percorre o texto. */
+@utility texto-dourado-brilho {
+  background-image: linear-gradient(
+    110deg,
+    var(--dourado-escuro) 0%,
+    var(--secondary) 35%,
+    var(--dourado-claro) 50%,
+    var(--secondary) 65%,
+    var(--dourado-escuro) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: var(--animate-brilho);
+}
+
+/* Anel dourado metálico ao redor de um elemento circular (logo). */
+@utility anel-dourado {
+  position: relative;
+  border-radius: 9999px;
+  padding: 3px;
+  background: conic-gradient(
+    from 180deg,
+    var(--dourado-escuro),
+    var(--dourado-claro),
+    var(--secondary),
+    var(--dourado-escuro),
+    var(--dourado-claro),
+    var(--dourado-escuro)
+  );
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.6),
+    0 18px 50px -12px color-mix(in oklch, var(--secondary), transparent 55%);
+}
+
+/* Fundo com brilhos laranja/dourado suaves, para páginas inteiras. */
+@utility fundo-brilho {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(60% 40% at 50% -10%, color-mix(in oklch, var(--primary), transparent 78%), transparent 70%),
+    radial-gradient(40% 30% at 100% 20%, color-mix(in oklch, var(--secondary), transparent 88%), transparent 70%);
+  background-repeat: no-repeat;
+}
+
+/* Cartão com efeito de vidro escuro. */
+@utility vidro {
+  background: color-mix(in oklch, var(--background), transparent 14%);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid color-mix(in oklch, var(--foreground), transparent 90%);
+}
+
+/* Botão principal com brilho laranja. */
+@utility brilho-primario {
+  box-shadow:
+    0 10px 30px -10px color-mix(in oklch, var(--primary), transparent 30%),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+/* Esconde a barra de rolagem mantendo a rolagem (chips de categoria). */
+@utility sem-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Respeito a quem prefere menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

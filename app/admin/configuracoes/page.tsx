@@ -11,7 +11,7 @@ export default async function PaginaConfiguracoes() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-secondary">Configurações — Identidade Visual</h1>
+      <h1 className="titulo-display text-4xl text-secondary">Identidade visual</h1>
       <p className="text-sm text-muted-foreground">
         Defina aqui as cores oficiais da lanchonete. Elas serão aplicadas em todo o site, sem
         precisar mexer em código (Princípio III da constituição do projeto).

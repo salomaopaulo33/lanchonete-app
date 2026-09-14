@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { ListaCardapio } from "@/components/cardapio/ListaCardapio";
 import { BarraCarrinho } from "@/components/carrinho/BarraCarrinho";
 import type { ItemCardapio } from "@/lib/domain/pedido";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Cardápio" };
 
 export default async function PaginaCardapio() {
   const supabase = await createClient();
@@ -26,7 +29,15 @@ export default async function PaginaCardapio() {
 
   return (
     <>
-      <h1 className="mb-6 text-2xl font-bold text-secondary">Cardápio</h1>
+      <div className="mb-4 animate-subir">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Feito na hora</p>
+        <h1 className="titulo-display mt-1 text-5xl">
+          Nosso <span className="texto-dourado">cardápio</span>
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Escolha o que quiser, ajuste as quantidades e finalize em segundos.
+        </p>
+      </div>
       <ListaCardapio itens={itens} />
       <BarraCarrinho />
     </>

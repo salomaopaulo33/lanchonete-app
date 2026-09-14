@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { AppError, mensagensErro, toApiErrorResponse } from "@/lib/errors";
-import { calcularValorTotal, type ItemPedidoInput } from "@/lib/domain/pedido";
+import { calcularValorTotal, TAXA_ENTREGA_PADRAO, type ItemPedidoInput } from "@/lib/domain/pedido";
 
-const TAXA_ENTREGA_PADRAO = 6.0;
 
 interface CorpoNovoPedido {
   clienteId: string;
