@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lanchonete",
+  title: "Nina Burguer",
   description: "Peça seu lanche, acompanhe a entrega e avalie o atendimento.",
 };
 

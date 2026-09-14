@@ -49,30 +49,28 @@
 }
 
 /*
- * Paleta provisória (Princípio III da constituição — ver lib/theme/tokens.ts).
- * Ao receber a paleta oficial da lanchonete, atualize os valores abaixo
- * (mantendo os mesmos em lib/theme/tokens.ts) — nenhum componente precisa
- * mudar.
+ * Paleta oficial da Nina Burguer (Princípio III da constituição — ver
+ * lib/theme/tokens.ts, mantido em sincronia com os valores abaixo).
  */
 :root {
-  --background: #fffbf5;
-  --foreground: #1f2933;
-  --card: #ffffff;
-  --card-foreground: #1f2933;
-  --popover: #ffffff;
-  --popover-foreground: #1f2933;
-  --primary: #e4572e;
+  --background: #0d0d0d;
+  --foreground: #ffffff;
+  --card: #1a1a1a;
+  --card-foreground: #ffffff;
+  --popover: #1a1a1a;
+  --popover-foreground: #ffffff;
+  --primary: #f5821f;
   --primary-foreground: #ffffff;
-  --secondary: #2e4057;
-  --secondary-foreground: #ffffff;
-  --muted: #f1e9db;
-  --muted-foreground: #6b7280;
-  --accent: #f1e9db;
-  --accent-foreground: #2e4057;
-  --destructive: #c1121f;
-  --border: #e5ded0;
-  --input: #e5ded0;
-  --ring: #e4572e;
+  --secondary: #c9962c;
+  --secondary-foreground: #1a1a1a;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --accent: #262626;
+  --accent-foreground: #f5821f;
+  --destructive: #e5484d;
+  --border: #2e2e2e;
+  --input: #2e2e2e;
+  --ring: #f5821f;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
