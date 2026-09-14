@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { AppError, toApiErrorResponse } from "@/lib/errors";
-import { getPaymentClient } from "@/lib/payments/mercadopago";
+import { getPaymentClient, getPreferenceClient } from "@/lib/payments/mercadopago";
 
 interface CorpoCheckout {
   pedidoId: string;
@@ -12,6 +12,8 @@ interface CorpoCheckout {
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { pedidoId, formaPagamento }: CorpoCheckout = await request.json();
+  const origin = new URL(request.url).origin;
+  const notificationUrl = `${origin}/api/payments/webhook`;
 
   try {
     const { data: pedido, error: erroPedido } = await supabase
@@ -39,14 +41,61 @@ export async function POST(request: Request) {
       return NextResponse.json({ pagamento });
     }
 
-    // Pix ou cartão: cria a preferência/pagamento no Mercado Pago.
+    if (formaPagamento === "cartao") {
+      // Cartão: usa o Checkout Pro (Preference) — o comprador paga na
+      // página hospedada do Mercado Pago, que já lida com tokenização.
+      const preferenceClient = getPreferenceClient();
+      const preferencia = await preferenceClient.create({
+        body: {
+          items: [
+            {
+              id: pedido.id,
+              title: `Pedido ${pedido.id}`,
+              quantity: 1,
+              unit_price: pedido.valor_total,
+            },
+          ],
+          back_urls: {
+            success: `${origin}/pedido/${pedido.id}`,
+            pending: `${origin}/pedido/${pedido.id}`,
+            failure: `${origin}/pedido/${pedido.id}/pagamento`,
+          },
+          auto_return: "approved",
+          notification_url: notificationUrl,
+        },
+      });
+
+      const { data: pagamento, error } = await supabase
+        .from("pagamento")
+        .upsert(
+          {
+            pedido_id: pedidoId,
+            forma_pagamento: formaPagamento,
+            status: "pendente",
+            valor: pedido.valor_total,
+            id_transacao_gateway: String(preferencia.id),
+          },
+          { onConflict: "pedido_id" },
+        )
+        .select()
+        .single();
+      if (error) throw error;
+
+      return NextResponse.json({
+        pagamento,
+        checkoutUrl: preferencia.sandbox_init_point ?? preferencia.init_point,
+      });
+    }
+
+    // Pix: cria o pagamento direto via API (gera QR code na hora).
     const paymentClient = getPaymentClient();
     const resultado = await paymentClient.create({
       body: {
         transaction_amount: pedido.valor_total,
         description: `Pedido ${pedido.id}`,
-        payment_method_id: formaPagamento === "pix" ? "pix" : undefined,
+        payment_method_id: "pix",
         payer: { email: "cliente@example.com" },
+        notification_url: notificationUrl,
       },
     });
 
@@ -70,7 +119,6 @@ export async function POST(request: Request) {
       pagamento,
       copiaECola: resultado.point_of_interaction?.transaction_data?.qr_code,
       qrCodeBase64: resultado.point_of_interaction?.transaction_data?.qr_code_base64,
-      checkoutUrl: (resultado as unknown as { init_point?: string }).init_point,
     });
   } catch (error) {
     const { message, status } = toApiErrorResponse(error);
