@@ -44,6 +44,11 @@ export async function POST(request: Request) {
     if (formaPagamento === "cartao") {
       // Cartão: usa o Checkout Pro (Preference) — o comprador paga na
       // página hospedada do Mercado Pago, que já lida com tokenização.
+      // O Mercado Pago descarta back_urls que não sejam https (ex.: em dev
+      // local, http://localhost) — nesse caso "auto_return" fica sem
+      // back_url.success definida e a criação da preferência falha com 400.
+      // Por isso só pedimos auto_return quando o origin já é https.
+      const origemEhHttps = origin.startsWith("https://");
       const preferenceClient = getPreferenceClient();
       const preferencia = await preferenceClient.create({
         body: {
@@ -60,7 +65,7 @@ export async function POST(request: Request) {
             pending: `${origin}/pedido/${pedido.id}`,
             failure: `${origin}/pedido/${pedido.id}/pagamento`,
           },
-          auto_return: "approved",
+          ...(origemEhHttps ? { auto_return: "approved" as const } : {}),
           notification_url: notificationUrl,
           external_reference: pedido.id,
         },
